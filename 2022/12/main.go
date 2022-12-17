@@ -7,12 +7,13 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 )
 
 var (
-	prev      = make(map[Vertex]Vertex)
-	dist      = make(map[Vertex]int)
-	unvisited = make(map[Vertex]bool)
+	//prev = make(map[Vertex]Vertex)
+	//dist = make(map[Vertex]int)
+	//unvisited = make(map[Vertex]bool)
 
 	input = [][]rune{}
 	edges = make(map[Vertex][]Edge)
@@ -76,8 +77,10 @@ func main() {
 	maxX := len(input[0]) - 1
 	maxY := len(input) - 1
 
+	var vertecies = []Vertex{}
+
 	render(func(vertex Vertex, r rune) rune {
-		unvisited[vertex] = true
+		vertecies = append(vertecies, vertex)
 		createEdges(vertex, maxX, maxY)
 		return r
 	})
@@ -89,11 +92,55 @@ func main() {
 
 	// https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm#Pseudocode
 
+	//minPath := calcMinPath(startV, vertecies)
+
+	s := sync.WaitGroup{}
+	res := sync.Map{}
+
+	render(func(vertex Vertex, r rune) rune {
+
+		if r == 'a' {
+			s.Add(1)
+			go func() {
+				defer s.Done()
+				path := calcMinPath(vertex, vertecies)
+				res.Store(vertex, path)
+			}()
+		}
+		return r
+	})
+	s.Wait()
+
+	minPath := inifinity
+	res.Range(func(key, value any) bool {
+		if value.(int) < minPath {
+			minPath = value.(int)
+		}
+		return true
+	})
+
+	// render(func(vertex Vertex, r rune) rune {
+	// 	if dist[vertex] != inifinity {
+	// 		return '0'
+	// 	}
+	// 	return r
+	// })
+
+	fmt.Printf("minimal path: %d", minPath)
+}
+
+func calcMinPath(start Vertex, vertecies []Vertex) int {
+	unvisited := make(map[Vertex]bool)
+	dist := make(map[Vertex]int)
+	for _, v := range vertecies {
+		unvisited[v] = true
+	}
+
 	for k := range unvisited {
 		dist[k] = inifinity
 	}
 
-	dist[startV] = 0
+	dist[start] = 0
 	for len(unvisited) > 0 {
 		u := getMin(dist, unvisited)
 		delete(unvisited, u)
@@ -112,7 +159,7 @@ func main() {
 			alt := dist[u] + edge.weight
 			if alt < dist[edge.v] {
 				dist[edge.v] = alt
-				prev[edge.v] = u
+				//prev[edge.v] = u
 			}
 		}
 	}
@@ -124,7 +171,7 @@ func main() {
 	// 	return r
 	// })
 
-	fmt.Printf("minimal path: %d", dist[destV])
+	return dist[destV]
 }
 
 func render(perV func(Vertex, rune) rune) {
