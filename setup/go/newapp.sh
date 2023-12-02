@@ -9,6 +9,9 @@ function newadv() {
     mkdir -p $appdir
 
     cd $appdir
+
+    touch base.txt test.txt base2.txt test2.txt
+
     go mod init $app
     rm -f main.go && printf 'package main\n\nimport "fmt"\n\nfunc main(){\n\tfmt.Println("Hello")\n}\n' > main.go
     rm -f main_test.go && printf 'package main\n\nimport("testing" \n "github.com/stretchr/testify/require" \n)  \nfunc Test(t *testing.T){\n\tfor _, tc := range []struct { \n\t desc string \n } {\n{\n desc:\"\", \n},\n } { \n\tt.Run(tc.desc, func(t *testing.T) { require.Equal(t, 1, 1) \n})\n}\n}\n' > main_test.go
